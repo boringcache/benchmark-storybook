@@ -6,7 +6,7 @@ workspace = "boringcache/benchmarks"
 
 [entries.cache]
 tag = "cache"
-default_path = "upstream/.nx/cache"
+default_path = "upstream/code/.nx/cache"
 
 [profiles.benchmark]
 entries = ["cache"]

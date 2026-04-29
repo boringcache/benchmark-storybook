@@ -43,6 +43,6 @@ jobs:
       strategy: actions-cache
       cache_lane: ${{ github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
       node_version: "22.4.1"
-      install_command: yarn install --immutable
-      build_command: yarn nx run-many --target=build --parallel=4
+      install_command: cd code && yarn install --immutable
+      build_command: cd code && yarn build
     secrets: inherit
