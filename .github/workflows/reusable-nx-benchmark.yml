@@ -91,8 +91,8 @@ jobs:
           ref_slug="${ref_slug%-}"
           ref_slug="${ref_slug:-main}"
           if [[ "$CACHE_LANE" == "rolling" ]]; then
-            cache_scope="${BENCHMARK_ID}-rolling-${ref_slug}"
-            cache_key_prefix="ac-${BENCHMARK_ID}-rolling-${ref_slug}"
+            cache_scope="${BENCHMARK_ID}-rolling-nx2-${ref_slug}"
+            cache_key_prefix="ac-${BENCHMARK_ID}-rolling-nx2-${ref_slug}"
             cache_key_primary="${cache_key_prefix}-r${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}-seed1"
             cache_key_fallback="${cache_key_prefix}-r${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}-seed2"
           else
@@ -347,7 +347,7 @@ jobs:
           ref_slug="${ref_slug%-}"
           ref_slug="${ref_slug:-main}"
           if [[ "$CACHE_LANE" == "rolling" ]]; then
-            cache_scope="${BENCHMARK_ID}-rolling-${ref_slug}"
+            cache_scope="${BENCHMARK_ID}-rolling-nx2-${ref_slug}"
           else
             cache_scope="${BENCHMARK_ID}-run-r${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}"
           fi
