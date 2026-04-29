@@ -4,6 +4,10 @@ workspace = "boringcache/benchmarks"
 # Hybrid local-archive entries below complement the remote cache for
 # fair warm/rolling parity with actions/cache.
 
+[adapters.nx]
+no-platform = true
+no-git = true
+
 [entries.cache]
 tag = "cache"
 default_path = "upstream/.nx/cache"
