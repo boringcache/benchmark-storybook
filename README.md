@@ -23,6 +23,8 @@ This benchmark exercises the Nx self-hosted remote cache (`mode: nx-proxy` in `b
 
 The measured build runs Storybook's cacheable Nx target `bench/react-vite-default-ts:build` from the upstream workspace root. It intentionally avoids `code/yarn build`, which bypasses Nx, and the full Storybook `run-many --target=build`, which pulls in the broader sandbox/repro matrix.
 
+Source preparation removes Storybook's checked-in Nx Cloud workspace binding from the temporary checkout. The benchmark measures BoringCache's self-hosted Nx proxy and the local `.nx/cache` archive, not Storybook's private Nx Cloud workspace.
+
 Fresh lane runs the same scenario set for each backend:
 
 - `cold`
