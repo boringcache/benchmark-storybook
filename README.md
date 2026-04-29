@@ -21,6 +21,8 @@ Pinned upstream source:
 
 This benchmark exercises the Nx self-hosted remote cache (`mode: nx-proxy` in `boringcache/one` v1.12.75+) alongside a hybrid local archive of `upstream/.nx/cache` for fair warm/rolling parity with `actions/cache`.
 
+The measured build runs Storybook's cacheable Nx target `bench/react-vite-default-ts:build` from the upstream workspace root. It intentionally avoids `code/yarn build`, which bypasses Nx, and the full Storybook `run-many --target=build`, which pulls in the broader sandbox/repro matrix.
+
 Fresh lane runs the same scenario set for each backend:
 
 - `cold`
