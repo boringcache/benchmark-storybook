@@ -1,0 +1,12 @@
+workspace = "boringcache/benchmarks"
+
+# Nx self-hosted remote cache (mode: nx-proxy in boringcache/one v1.12.75+).
+# Hybrid local-archive entries below complement the remote cache for
+# fair warm/rolling parity with actions/cache.
+
+[entries.cache]
+tag = "cache"
+default_path = "upstream/.nx/cache"
+
+[profiles.benchmark]
+entries = ["cache"]

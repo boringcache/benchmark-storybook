@@ -1,0 +1,48 @@
+name: "Storybook - Actions Cache"
+run-name: >-
+  ${{ format('{0} | {1}', github.event_name == 'workflow_dispatch' && inputs.cache_lane == 'rolling' && 'AC Rolling' || 'AC Fresh', github.event_name == 'push' && github.event.head_commit.message || github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || format('Manual dispatch ({0})', github.ref_name)) }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      cache_lane:
+        description: "Benchmark lane"
+        required: false
+        type: choice
+        default: fresh
+        options:
+          - fresh
+          - rolling
+  push:
+    branches:
+      - main
+    paths:
+      - ".gitmodules"
+      - "upstream"
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - ".github/workflows/storybook-boringcache.yml"
+      - ".github/workflows/storybook-actions-cache.yml"
+      - ".github/workflows/reusable-nx-benchmark.yml"
+      - "README.md"
+      - "scenarios/**"
+      - "scripts/**"
+      - "upstream"
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  benchmark:
+    uses: ./.github/workflows/reusable-nx-benchmark.yml
+    with:
+      benchmark_id: storybook
+      project_repo: storybookjs/storybook
+      strategy: actions-cache
+      cache_lane: ${{ github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
+      node_version: "22.4.1"
+      install_command: yarn install --immutable
+      build_command: yarn nx run-many --target=build --parallel=4
+    secrets: inherit
