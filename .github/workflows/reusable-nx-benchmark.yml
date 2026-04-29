@@ -40,6 +40,10 @@ env:
   INSTALL_COMMAND: ${{ inputs.install_command }}
   BUILD_COMMAND: ${{ inputs.build_command }}
   CACHE_LANE: ${{ inputs.cache_lane }}
+  # Force self-hosted remote cache; the upstream Nx workspace may have
+  # nxCloudId in nx.json. NX_NO_CLOUD=true bypasses Nx Cloud auth so the
+  # benchmark routes through NX_SELF_HOSTED_REMOTE_CACHE_SERVER instead.
+  NX_NO_CLOUD: 'true'
 
 jobs:
   seed-cache:
