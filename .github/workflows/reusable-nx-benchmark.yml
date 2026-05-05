@@ -145,16 +145,11 @@ jobs:
         id: seed_timing_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Configure boringcache/one for actions-cache tooling
+      - name: Setup Node for actions/cache tooling
         if: inputs.strategy == 'actions-cache'
-        uses: boringcache/one@v1
+        uses: actions/setup-node@v6
         with:
-          setup: mise
-          mode: auto
-          tools: node@${{ env.NODE_VERSION }}
-          workspace: ${{ env.BENCHMARK_WORKSPACE }}
-          working-directory: ./upstream
-          verbose: true
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure boringcache/one
         if: inputs.strategy == 'boringcache'
@@ -391,16 +386,11 @@ jobs:
         id: scenario_timing_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Configure one for actions-cache tooling
+      - name: Setup Node for actions/cache tooling
         if: inputs.strategy == 'actions-cache'
-        uses: boringcache/one@v1
+        uses: actions/setup-node@v6
         with:
-          setup: mise
-          mode: auto
-          tools: node@${{ env.NODE_VERSION }}
-          workspace: ${{ env.BENCHMARK_WORKSPACE }}
-          working-directory: ./upstream
-          verbose: true
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure boringcache/one
         if: inputs.strategy == 'boringcache'
