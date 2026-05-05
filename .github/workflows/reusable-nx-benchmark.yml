@@ -65,6 +65,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       cold_seconds: ${{ steps.cold_baseline_build.outputs.seconds }}
+      cold_build_seconds: ${{ steps.cold_baseline_build.outputs.build_seconds }}
       scope_started_at: ${{ steps.scope.outputs.scope_started_at }}
       tags_csv: ${{ steps.boringcache_one.outputs.resolved-tags }}
       seed_cache_key: ${{ steps.seed_cache_key.outputs.key }}
@@ -531,6 +532,11 @@ jobs:
             fi
             local key="${phase//-/_}"
             echo "${key}_seconds=${seconds}" >> "$GITHUB_OUTPUT"
+            local build_seconds
+            build_seconds="$(grep "^build_seconds=" "$file" | head -n1 | cut -d= -f2- || true)"
+            if [[ -n "${build_seconds}" ]]; then
+              echo "${key}_build_seconds=${build_seconds}" >> "$GITHUB_OUTPUT"
+            fi
           }
           parse_phase warm1
 
@@ -571,7 +577,9 @@ jobs:
             --project-repo "$PROJECT_REPO" \
             --project-ref "${{ steps.upstream_ref.outputs.sha }}" \
             --cold-seconds "${{ needs.seed-cache.outputs.cold_seconds }}" \
+            --cold-build-seconds "${{ needs.seed-cache.outputs.cold_build_seconds }}" \
             --warm1-seconds "${{ inputs.cache_lane == 'rolling' && '' || steps.timings.outputs.warm1_seconds }}" \
+            --warm1-build-seconds "${{ inputs.cache_lane == 'rolling' && '' || steps.timings.outputs.warm1_build_seconds }}" \
             --cache-storage-bytes "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.bytes || steps.ac_cache_size.outputs.bytes }}" \
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
             --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run executes only the upstream-sync seed build; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: cold+seed run uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives the root upstream/.nx/cache task cache via the benchmark profile in .boringcache.toml. Warm1 restores that archive on a fresh runner and re-runs yarn install before rebuilding the same pinned source tree against the seeded Nx remote cache in read-only mode.' || 'Fresh lane: cold+seed run builds from scratch and saves the Yarn 4 cache plus root upstream/.nx/cache to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
