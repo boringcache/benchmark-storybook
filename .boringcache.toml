@@ -12,9 +12,5 @@ no-git = true
 tag = "yarn-cache"
 default_path = "~/.yarn/berry/cache"
 
-[entries.yarn-install-state]
-tag = "yarn-install-state"
-default_path = "upstream/.yarn/root-install-state.gz"
-
 [profiles.benchmark]
-entries = ["yarn-cache", "yarn-install-state"]
+entries = ["yarn-cache"]
