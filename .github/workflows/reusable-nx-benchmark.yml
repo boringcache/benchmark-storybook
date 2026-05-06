@@ -225,8 +225,8 @@ jobs:
         with:
           path: |
             upstream/.nx/cache
-            upstream/.yarn/cache
-            upstream/.yarn/install-state.gz
+            ~/.yarn/berry/cache
+            upstream/.yarn/root-install-state.gz
           key: ${{ steps.scope.outputs.cache_key_primary }}
           restore-keys: |
             ${{ steps.scope.outputs.cache_key_prefix }}-
@@ -237,7 +237,7 @@ jobs:
           set -euo pipefail
           rm -rf upstream/node_modules
           if [[ "$CACHE_LANE" != "rolling" ]]; then
-            rm -rf upstream/.nx/cache upstream/.yarn/cache upstream/.yarn/install-state.gz
+            rm -rf upstream/.nx/cache "$HOME/.yarn/berry/cache" upstream/.yarn/root-install-state.gz
           fi
 
           phase_start="${{ steps.seed_timing_start.outputs.started_at }}"
@@ -265,8 +265,8 @@ jobs:
         with:
           path: |
             upstream/.nx/cache
-            upstream/.yarn/cache
-            upstream/.yarn/install-state.gz
+            ~/.yarn/berry/cache
+            upstream/.yarn/root-install-state.gz
           key: ${{ steps.scope.outputs.cache_key_primary }}
 
       - name: Save seeded cache (fallback key)
@@ -277,8 +277,8 @@ jobs:
         with:
           path: |
             upstream/.nx/cache
-            upstream/.yarn/cache
-            upstream/.yarn/install-state.gz
+            ~/.yarn/berry/cache
+            upstream/.yarn/root-install-state.gz
           key: ${{ steps.scope.outputs.cache_key_fallback }}
 
       - name: Resolve seeded cache key
@@ -411,12 +411,16 @@ jobs:
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
 
-      - name: Verify hybrid archives restored
+      - name: Verify dependency archives restored
         if: inputs.strategy == 'boringcache'
         run: |
           set -euo pipefail
-          if [[ ! -d upstream/.nx/cache ]] || [[ -z "$(find upstream/.nx/cache -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
-            echo "Missing or empty upstream/.nx/cache after BoringCache restore" >&2
+          if [[ ! -d "$HOME/.yarn/berry/cache" ]] || [[ -z "$(find "$HOME/.yarn/berry/cache" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+            echo "Missing or empty ~/.yarn/berry/cache after BoringCache restore" >&2
+            exit 1
+          fi
+          if [[ ! -f upstream/.yarn/root-install-state.gz ]]; then
+            echo "Missing upstream/.yarn/root-install-state.gz after BoringCache restore" >&2
             exit 1
           fi
 
@@ -426,8 +430,8 @@ jobs:
         with:
           path: |
             upstream/.nx/cache
-            upstream/.yarn/cache
-            upstream/.yarn/install-state.gz
+            ~/.yarn/berry/cache
+            upstream/.yarn/root-install-state.gz
           key: ${{ needs.seed-cache.outputs.seed_cache_key }}
           fail-on-cache-miss: true
 
@@ -572,7 +576,7 @@ jobs:
             --warm1-build-seconds "${{ inputs.cache_lane == 'rolling' && '' || steps.timings.outputs.warm1_build_seconds }}" \
             --cache-storage-bytes "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.bytes || steps.ac_cache_size.outputs.bytes }}" \
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
-            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run executes only the upstream-sync seed build; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: cold+seed run uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives the root upstream/.nx/cache task cache via the benchmark profile in .boringcache.toml. Warm1 restores that archive on a fresh runner and re-runs yarn install before rebuilding the same pinned source tree against the seeded Nx remote cache in read-only mode.' || 'Fresh lane: cold+seed run builds from scratch and saves the Yarn 4 cache plus root upstream/.nx/cache to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
+            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run executes only the upstream-sync seed build; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: cold+seed run uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm1 restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the seeded Nx remote cache in read-only mode.' || 'Fresh lane: cold+seed run builds from scratch and saves the Yarn 4 cache plus root upstream/.nx/cache to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v6

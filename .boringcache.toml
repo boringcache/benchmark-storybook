@@ -1,16 +1,20 @@
 workspace = "boringcache/benchmarks"
 
-# Nx self-hosted remote cache (mode: nx-proxy in boringcache/one v1.12.75+).
-# Hybrid local-archive entries below complement the remote cache for
-# fair warm/rolling parity with actions/cache.
+# Nx self-hosted remote-cache benchmark. boringcache/one mode=nx-proxy
+# owns the task-output cache, so the benchmark profile archives only Yarn
+# dependency state that the remote adapter does not cover.
 
 [adapters.nx]
 no-platform = true
 no-git = true
 
-[entries.cache]
-tag = "cache"
-default_path = "upstream/.nx/cache"
+[entries.yarn-cache]
+tag = "yarn-cache"
+default_path = "~/.yarn/berry/cache"
+
+[entries.yarn-install-state]
+tag = "yarn-install-state"
+default_path = "upstream/.yarn/root-install-state.gz"
 
 [profiles.benchmark]
-entries = ["cache"]
+entries = ["yarn-cache", "yarn-install-state"]
