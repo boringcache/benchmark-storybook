@@ -1,8 +1,8 @@
 workspace = "boringcache/benchmarks"
 
-# Nx self-hosted remote-cache benchmark. boringcache/one mode=nx-proxy
-# owns the task-output cache, so the benchmark profile archives only Yarn
-# dependency state that the remote adapter does not cover.
+# Nx remote-cache benchmark. boringcache/one mode=nx-proxy owns the
+# task-output cache, so the benchmark profile archives only Yarn dependency
+# state that the remote adapter does not cover.
 
 [adapters.nx]
 no-platform = true

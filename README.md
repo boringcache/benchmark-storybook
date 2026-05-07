@@ -19,11 +19,11 @@ Pinned upstream source:
 
 ## What It Measures
 
-This benchmark exercises the Nx self-hosted remote cache (`mode: nx-proxy` in `boringcache/one` v1.12.75+) alongside a hybrid local archive of `upstream/.nx/cache` for fair warm/rolling parity with `actions/cache`.
+This benchmark compares BoringCache's Nx self-hosted remote cache (`mode: nx-proxy` in `boringcache/one` v1.12.75+) with GitHub Actions cache restoring Nx's local task-cache paths.
 
 The measured build runs Storybook's cacheable Nx target `bench/react-vite-default-ts:build` from the upstream workspace root. It intentionally avoids `code/yarn build`, which bypasses Nx, and the full Storybook `run-many --target=build`, which pulls in the broader sandbox/repro matrix.
 
-Source preparation removes Storybook's checked-in Nx Cloud workspace binding from the temporary checkout. The benchmark measures BoringCache's self-hosted Nx proxy and the local `.nx/cache` archive, not Storybook's private Nx Cloud workspace.
+Source preparation removes Storybook's checked-in Nx Cloud workspace binding from the temporary checkout. The benchmark measures BoringCache's self-hosted Nx proxy against the actions/cache local `.nx/cache` path, not Storybook's private Nx Cloud workspace.
 
 Fresh lane runs the same scenario set for each backend:
 
@@ -37,7 +37,11 @@ The story this benchmark is meant to show is:
 - speed on fresh cold and warm paths
 - first-build behavior after upstream sync in the rolling lane
 - storage footprint in each backend
-- whether the Nx remote cache plus local `.nx/cache` archive stays reliable on fresh runners
+- whether Nx cache reuse stays reliable on fresh runners
+
+The BoringCache lane archives Yarn dependency state only. It does not archive
+`upstream/.nx/cache` or `upstream/.nx/workspace-data`; those paths are the
+local Nx cache surface used by the actions/cache lane.
 
 ## Token Model
 
