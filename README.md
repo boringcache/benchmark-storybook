@@ -25,17 +25,17 @@ The measured build runs Storybook's cacheable Nx target `bench/react-vite-defaul
 
 Source preparation removes Storybook's checked-in Nx Cloud workspace binding from the temporary checkout. The benchmark measures BoringCache's self-hosted Nx proxy against the actions/cache local `.nx/cache` path, not Storybook's private Nx Cloud workspace.
 
-Fresh lane runs the same scenario set for each backend:
+Fresh lane runs a no-prior-cache cold build plus one warm rerun for each backend:
 
 - `cold`
 - `warm1`
 
-Rolling lane records only the first build after upstream sync and intentionally skips `warm1`.
+Rolling lane records the upstream commit build as-is after each upstream sync against the prior rolling cache and intentionally skips `warm1`.
 
 The story this benchmark is meant to show is:
 
 - speed on fresh cold and warm paths
-- first-build behavior after upstream sync in the rolling lane
+- commit-build behavior on normal upstream syncs in the rolling lane
 - storage footprint in each backend
 - whether Nx cache reuse stays reliable on fresh runners
 

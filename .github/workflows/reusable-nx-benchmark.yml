@@ -58,7 +58,7 @@ env:
 
 jobs:
   seed-cache:
-    name: ${{ format('Nx Seed ({0}, {1})', inputs.strategy == 'actions-cache' && 'actions/cache' || 'BoringCache', inputs.cache_lane == 'rolling' && 'rolling' || 'fresh') }}
+    name: ${{ format('Nx {0} ({1}, {2})', inputs.cache_lane == 'rolling' && 'Commit Build' || 'Cold Build', inputs.strategy == 'actions-cache' && 'actions/cache' || 'BoringCache', inputs.cache_lane == 'rolling' && 'rolling' || 'fresh') }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
@@ -249,7 +249,7 @@ jobs:
           fi
           echo "status=${status}" >> "$GITHUB_OUTPUT"
 
-      - name: ${{ inputs.cache_lane == 'rolling' && 'Run rolling seed-only build' || 'Run fresh seed build' }}
+      - name: ${{ inputs.cache_lane == 'rolling' && 'Run rolling commit build' || 'Run fresh cold build' }}
         id: cold_baseline_build
         run: |
           set -euo pipefail
@@ -265,7 +265,7 @@ jobs:
           echo "seconds=$((end - phase_start))" >> "$GITHUB_OUTPUT"
           echo "build_seconds=$((end - start))" >> "$GITHUB_OUTPUT"
 
-      - name: Verify seed build produced local Nx cache
+      - name: Verify cold build produced local Nx cache
         run: |
           set -euo pipefail
           if [[ ! -d upstream/.nx/cache ]] || [[ -z "$(find upstream/.nx/cache -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
@@ -439,7 +439,7 @@ jobs:
             exit 1
           fi
 
-      - name: Restore seeded actions/cache
+      - name: Restore cache from fresh cold build
         if: inputs.strategy == 'actions-cache'
         uses: actions/cache/restore@v5
         with:
@@ -593,7 +593,7 @@ jobs:
             --cache-storage-bytes "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.bytes || steps.ac_cache_size.outputs.bytes }}" \
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
             --cache-import-status "${{ needs.seed-cache.outputs.cache_import_status }}" \
-            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run executes only the upstream-sync seed build; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: cold+seed run uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm1 restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the seeded Nx remote cache in read-only mode.' || 'Fresh lane: cold+seed run builds from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
+            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: the cold build uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm1 restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the Nx remote cache populated by the cold build in read-only mode.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v6
