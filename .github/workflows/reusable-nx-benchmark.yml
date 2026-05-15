@@ -557,8 +557,11 @@ jobs:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
         run: |
           tags_csv="${{ needs.seed-cache.outputs.tags_csv }}"
-          bytes="$(./scripts/sum-boringcache-check-sizes.sh "$BENCHMARK_WORKSPACE" "$tags_csv")"
+          mkdir -p benchmark-storage
+          breakdown_path="benchmark-storage/boringcache-storage-breakdown.json"
+          bytes="$(BORINGCACHE_STORAGE_BREAKDOWN_PATH="$breakdown_path" ./scripts/sum-boringcache-check-sizes.sh "$BENCHMARK_WORKSPACE" "$tags_csv")"
           echo "bytes=${bytes}" >> "$GITHUB_OUTPUT"
+          echo "breakdown_path=${breakdown_path}" >> "$GITHUB_OUTPUT"
 
       - name: Measure GHA cache storage usage
         if: inputs.strategy == 'actions-cache'
@@ -592,6 +595,7 @@ jobs:
             --warm1-build-seconds "${{ inputs.cache_lane == 'rolling' && '' || steps.timings.outputs.warm1_build_seconds }}" \
             --cache-storage-bytes "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.bytes || steps.ac_cache_size.outputs.bytes }}" \
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
+            --storage-breakdown-json "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.breakdown_path || '' }}" \
             --cache-import-status "${{ needs.seed-cache.outputs.cache_import_status }}" \
             --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm1 follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: the cold build uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm1 restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the Nx remote cache populated by the cold build in read-only mode.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm1 restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}"
 
