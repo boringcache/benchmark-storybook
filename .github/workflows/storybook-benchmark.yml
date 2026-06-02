@@ -1,6 +1,6 @@
-name: "Storybook - BoringCache"
+name: "Storybook Nx Benchmark"
 run-name: >-
-  ${{ format('{0} | {1}', github.event_name == 'workflow_dispatch' && inputs.cache_lane == 'rolling' && 'BoringCache Rolling' || 'BoringCache Fresh', github.event_name == 'schedule' && 'Weekly fresh' || github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || format('Manual dispatch ({0})', github.ref_name)) }}
+  ${{ format('Benchmark {0} | {1}', github.event_name == 'workflow_dispatch' && inputs.cache_lane == 'rolling' && 'Rolling' || 'Fresh', github.event_name == 'schedule' && 'Scheduled' || github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || format('Manual dispatch ({0})', github.ref_name)) }}
 
 on:
   workflow_dispatch:
@@ -25,12 +25,38 @@ on:
         description: "Optional BORINGCACHE_OCI_STREAM_THROUGH_MIN_BYTES (Docker/OCI only; blank = disabled)"
         required: false
         type: string
+  schedule:
+    - cron: "0 4 * * 3"
+  pull_request:
+    paths:
+      - ".gitmodules"
+      - ".github/workflows/storybook-benchmark.yml"
+      - ".github/workflows/reusable-nx-benchmark.yml"
+      - "README.md"
+      - "scenarios/**"
+      - "scripts/**"
+      - "upstream"
+
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 jobs:
-  benchmark:
+  github-actions-cache:
+    name: Build with GitHub Actions Cache
+    uses: ./.github/workflows/reusable-nx-benchmark.yml
+    with:
+      benchmark_id: storybook
+      project_repo: storybookjs/storybook
+      strategy: actions-cache
+      cache_lane: ${{ github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
+      node_version: "22.12.0"
+      install_command: yarn install --immutable
+      build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
+    secrets: inherit
+
+  boringcache:
+    name: Build with BoringCache
     uses: ./.github/workflows/reusable-nx-benchmark.yml
     with:
       benchmark_id: storybook

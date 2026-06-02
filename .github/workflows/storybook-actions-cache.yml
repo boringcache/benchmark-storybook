@@ -13,19 +13,6 @@ on:
         options:
           - fresh
           - rolling
-  schedule:
-    - cron: "0 4 * * 3"
-  pull_request:
-    paths:
-      - ".gitmodules"
-      - ".github/workflows/storybook-boringcache.yml"
-      - ".github/workflows/storybook-actions-cache.yml"
-      - ".github/workflows/reusable-nx-benchmark.yml"
-      - "README.md"
-      - "scenarios/**"
-      - "scripts/**"
-      - "upstream"
-
 permissions:
   contents: read
   actions: write
