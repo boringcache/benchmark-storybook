@@ -43,7 +43,7 @@ permissions:
 
 jobs:
   github-actions-cache:
-    name: Build with GitHub Actions Cache
+    name: GHA
     uses: ./.github/workflows/reusable-nx-benchmark.yml
     with:
       benchmark_id: storybook
@@ -56,7 +56,7 @@ jobs:
     secrets: inherit
 
   boringcache:
-    name: Build with BoringCache
+    name: BC
     uses: ./.github/workflows/reusable-nx-benchmark.yml
     with:
       benchmark_id: storybook
