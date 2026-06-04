@@ -16,18 +16,6 @@ on:
         required: false
         type: string
         default: fresh
-      blob_download_concurrency:
-        required: false
-        type: string
-        default: ''
-      blob_prefetch_concurrency:
-        required: false
-        type: string
-        default: ''
-      oci_stream_through_min_bytes:
-        required: false
-        type: string
-        default: ''
       benchmark_workspace:
         required: false
         type: string
@@ -52,9 +40,6 @@ env:
   INSTALL_COMMAND: ${{ inputs.install_command }}
   BUILD_COMMAND: ${{ inputs.build_command }}
   CACHE_LANE: ${{ inputs.cache_lane }}
-  BORINGCACHE_BLOB_DOWNLOAD_CONCURRENCY: ${{ inputs.blob_download_concurrency }}
-  BORINGCACHE_BLOB_PREFETCH_CONCURRENCY: ${{ inputs.blob_prefetch_concurrency }}
-  BORINGCACHE_OCI_STREAM_THROUGH_MIN_BYTES: ${{ inputs.oci_stream_through_min_bytes }}
 
 jobs:
   seed-cache:
