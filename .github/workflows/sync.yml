@@ -33,6 +33,21 @@ jobs:
           git submodule sync --recursive
           git submodule update --init --remote --checkout upstream
 
+          node_version="$(tr -d '[:space:]' < upstream/.nvmrc)"
+          if [[ ! "${node_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid Node version in upstream/.nvmrc: ${node_version:-<empty>}" >&2
+            exit 1
+          fi
+          sed -i -E \
+            "s/node_version: .*/node_version: \"${node_version}\"/" \
+            .github/workflows/storybook-benchmark.yml
+
+          pinned_count="$(grep -cF "node_version: \"${node_version}\"" .github/workflows/storybook-benchmark.yml)"
+          if [[ "${pinned_count}" != "2" ]]; then
+            echo "Expected both benchmark providers to pin upstream Node ${node_version}; found ${pinned_count}." >&2
+            exit 1
+          fi
+
           github_repo_slug() {
             local url="$1"
             url="${url%/}"
@@ -53,6 +68,6 @@ jobs:
             exit 0
           fi
 
-          git add upstream
+          git add upstream .github/workflows/storybook-benchmark.yml
           git commit -m "Update upstream to ${upstream_repo}@${commit_sha}"
           git push origin HEAD:main

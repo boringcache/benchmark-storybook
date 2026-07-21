@@ -38,7 +38,7 @@ jobs:
       project_repo: storybookjs/storybook
       strategy: actions-cache
       cache_lane: ${{ github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
-      node_version: "22.12.0"
+      node_version: "22.22.3"
       install_command: yarn install --immutable
       build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
     secrets: inherit
@@ -51,7 +51,7 @@ jobs:
       project_repo: storybookjs/storybook
       strategy: boringcache
       cache_lane: ${{ github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
-      node_version: "22.12.0"
+      node_version: "22.22.3"
       install_command: yarn install --immutable
       build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
     secrets: inherit
