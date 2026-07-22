@@ -62,7 +62,7 @@ jobs:
       project_repo: storybookjs/storybook
       strategy: boringcache
       cache_lane: ${{ github.event_name == 'push' && 'rolling' || github.event_name == 'workflow_dispatch' && inputs.cache_lane || 'fresh' }}
-      cli_version: ${{ inputs.cli_version }}
+      cli_version: ${{ inputs.cli_version || vars.BORINGCACHE_BENCHMARK_CLI_VERSION || 'v1.13.93' }}
       node_version: "22.22.3"
       install_command: yarn install --immutable
       build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
