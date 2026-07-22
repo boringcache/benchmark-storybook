@@ -156,7 +156,6 @@ jobs:
           working-directory: ./upstream
           cache-profiles: benchmark
           allow-external-symlinks: 'true'
-          verify: wait
           verbose: true
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
@@ -440,7 +439,6 @@ jobs:
           cache-profiles: benchmark
           allow-external-symlinks: 'true'
           fail-on-cache-miss: true
-          verify: check
           verbose: true
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
