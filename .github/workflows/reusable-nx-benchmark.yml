@@ -156,6 +156,7 @@ jobs:
           working-directory: ./upstream
           cache-profiles: benchmark
           allow-external-symlinks: 'true'
+          fail-on-cache-error: ${{ inputs.cache_lane == 'fresh' }}
           verbose: true
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
