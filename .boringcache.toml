@@ -5,12 +5,12 @@ workspace = "boringcache/benchmark-storybook"
 # state that the remote adapter does not cover.
 
 [adapters.nx]
-tag = "storybook-nx"
+tag = "storybook-nx-local"
 no-platform = true
 no-git = true
 
 [entries.yarn-cache]
-tag = "yarn-cache"
+tag = "storybook-yarn-cache-local"
 default_path = "~/.yarn/berry/cache"
 
 [profiles.benchmark]
