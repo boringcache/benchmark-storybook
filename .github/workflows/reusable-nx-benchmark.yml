@@ -110,6 +110,8 @@ jobs:
           fi
           tag_nx="${cache_scope}-nx"
 
+          ./scripts/scope-boringcache-run.sh "$cache_scope"
+
           echo "scope_started_at=${scope_started_at}" >> "$GITHUB_OUTPUT"
           echo "tag_nx=${tag_nx}" >> "$GITHUB_OUTPUT"
           echo "cache_key_prefix=${cache_key_prefix}" >> "$GITHUB_OUTPUT"
@@ -121,6 +123,7 @@ jobs:
           set -euo pipefail
 
           mode="${1:-warm}"
+          log_path="${RUNNER_TEMP}/${BENCHMARK_ID}-${mode}-nx.log"
           corepack enable
           cd upstream
           corepack install
@@ -128,7 +131,7 @@ jobs:
           yarn --version
 
           eval "$INSTALL_COMMAND"
-          eval "$BUILD_COMMAND"
+          eval "$BUILD_COMMAND" 2>&1 | tee "$log_path"
           SH
           chmod +x ./run-nx-phase.sh
 
@@ -157,6 +160,7 @@ jobs:
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
           BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
+          BORINGCACHE_NO_GIT: "true"
           BORINGCACHE_OBSERVABILITY_JSONL_PATH: ${{ runner.temp }}/${{ env.BENCHMARK_ID }}-boringcache-build-observability.jsonl
 
       - name: Purge GitHub Actions cache keys
@@ -249,9 +253,22 @@ jobs:
           phase_start="${{ steps.seed_timing_start.outputs.started_at }}"
           start="$(date +%s)"
           ./run-nx-phase.sh cold
+          if [[ "$CACHE_LANE" != "rolling" && "${{ inputs.strategy }}" == "boringcache" ]] && \
+             grep -Fq "[remote cache]" "${RUNNER_TEMP}/${BENCHMARK_ID}-cold-nx.log"; then
+            echo "Fresh BoringCache cold build unexpectedly restored Nx task history" >&2
+            exit 1
+          fi
           end="$(date +%s)"
           echo "seconds=$((end - phase_start))" >> "$GITHUB_OUTPUT"
           echo "build_seconds=$((end - start))" >> "$GITHUB_OUTPUT"
+
+      - name: Upload cold Nx native evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: nx-native-${{ env.BENCHMARK_ID }}-${{ inputs.strategy }}-${{ inputs.cache_lane }}-cold
+          path: ${{ runner.temp }}/${{ env.BENCHMARK_ID }}-cold-nx.log
+          if-no-files-found: error
 
       - name: Capture BoringCache session summary
         if: inputs.strategy == 'boringcache' && always()
@@ -393,6 +410,8 @@ jobs:
           fi
           tag_nx="${cache_scope}-nx"
 
+          ./scripts/scope-boringcache-run.sh "$cache_scope"
+
           echo "tag_nx=${tag_nx}" >> "$GITHUB_OUTPUT"
 
           cat > ./run-nx-phase.sh <<'SH'
@@ -400,6 +419,7 @@ jobs:
           set -euo pipefail
 
           mode="${1:-warm}"
+          log_path="${RUNNER_TEMP}/${BENCHMARK_ID}-${mode}-nx.log"
           corepack enable
           cd upstream
           corepack install
@@ -407,7 +427,7 @@ jobs:
           yarn --version
 
           eval "$INSTALL_COMMAND"
-          eval "$BUILD_COMMAND"
+          eval "$BUILD_COMMAND" 2>&1 | tee "$log_path"
           SH
           chmod +x ./run-nx-phase.sh
 
@@ -434,6 +454,7 @@ jobs:
           verbose: true
         env:
           BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
+          BORINGCACHE_NO_GIT: "true"
 
       - name: Verify dependency archives restored
         if: inputs.strategy == 'boringcache'
@@ -462,9 +483,22 @@ jobs:
           phase_start="${{ steps.scenario_timing_start.outputs.started_at }}"
           start="$(date +%s)"
           ./run-nx-phase.sh warm
+          if [[ "${{ inputs.strategy }}" == "boringcache" ]] && \
+             ! grep -Fq "[remote cache]" "${RUNNER_TEMP}/${BENCHMARK_ID}-warm-nx.log"; then
+            echo "Warm Nx build produced zero remote task-cache hits" >&2
+            exit 1
+          fi
           end="$(date +%s)"
           echo "seconds=$((end - phase_start))" >> "$GITHUB_OUTPUT"
           echo "build_seconds=$((end - start))" >> "$GITHUB_OUTPUT"
+
+      - name: Upload warm Nx native evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: nx-native-${{ env.BENCHMARK_ID }}-${{ inputs.strategy }}-warm
+          path: ${{ runner.temp }}/${{ env.BENCHMARK_ID }}-warm-nx.log
+          if-no-files-found: error
 
       - name: Verify scenario build used local Nx cache
         run: |
@@ -613,7 +647,7 @@ jobs:
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
             --storage-breakdown-json "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.breakdown_path || '' }}" \
             --cache-import-status "${{ needs.seed-cache.outputs.cache_import_status }}" \
-            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: the cold build uses boringcache/one in mode=nx with after the host workflow sets up Node.js; the committed repo plan selects the Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the Nx remote cache populated by the cold build in read-only mode.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}" \
+            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: after the host workflow sets up Node.js, the cold build uses boringcache/one in mode=nx with trust-policy=publish and run-scoped tags owned by the committed repo plan. Warm restores only the matching Yarn dependency archive on a fresh runner, uses trust-policy=restore, and must report native Nx remote-cache hits from the cold build.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}" \
             "${cache_summary_args[@]}"
 
       - name: Upload benchmark artifacts
