@@ -1,10 +1,11 @@
 workspace = "boringcache/benchmark-storybook"
 
-# Nx remote-cache benchmark. boringcache/one mode=nx-proxy owns the
+# Nx remote-cache benchmark. boringcache/one mode=nx owns the
 # task-output cache, so the benchmark profile archives only Yarn dependency
 # state that the remote adapter does not cover.
 
 [adapters.nx]
+tag = "storybook-nx"
 no-platform = true
 no-git = true
 

@@ -19,7 +19,7 @@ Pinned upstream source:
 
 ## What It Measures
 
-This benchmark compares BoringCache's Nx self-hosted remote cache (`mode: nx-proxy` in `boringcache/one` v1.12.75+) with GitHub Actions cache restoring Nx's local task-cache paths.
+This benchmark compares BoringCache's Nx remote cache (`mode: nx`) with GitHub Actions cache restoring Nx's local task-cache paths.
 
 The measured build runs Storybook's cacheable Nx target `bench/react-vite-default-ts:build` from the upstream workspace root. It intentionally avoids `code/yarn build`, which bypasses Nx, and the full Storybook `run-many --target=build`, which pulls in the broader sandbox/repro matrix.
 
@@ -49,4 +49,3 @@ This repo uses split BoringCache tokens as the standard CI shape:
 
 - `BORINGCACHE_RESTORE_TOKEN` for read-only restore and proxy access
 - `BORINGCACHE_SAVE_TOKEN` for trusted write paths
-- `BORINGCACHE_API_TOKEN` only where a single bearer variable is still required for compatibility
