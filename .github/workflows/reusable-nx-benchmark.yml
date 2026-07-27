@@ -65,8 +65,8 @@ jobs:
       - name: Validate BoringCache secrets
         if: inputs.strategy == 'boringcache'
         env:
-          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
-          BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
+          BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
         run: |
           set -euo pipefail
           [[ -n "${BORINGCACHE_RESTORE_TOKEN}" ]] || { echo "Missing BoringCache restore token" >&2; exit 1; }
@@ -136,8 +136,7 @@ jobs:
         id: seed_timing_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node for actions/cache tooling
-        if: inputs.strategy == 'actions-cache'
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -145,23 +144,19 @@ jobs:
       - name: Configure boringcache/one
         if: inputs.strategy == 'boringcache'
         id: boringcache_one
-        uses: boringcache/one@v1
+        uses: boringcache/one@9721d419d2c78c0780963d297eb3f81f24641a27
         with:
-          setup: mise
+          setup: none
           cli-version: ${{ inputs.cli_version }}
-          mode: nx-proxy
-          tools: node@${{ env.NODE_VERSION }}
-          workspace: ${{ env.BENCHMARK_WORKSPACE }}
-          cache-tag: ${{ steps.scope.outputs.tag_nx }}
+          mode: nx
           working-directory: ./upstream
           cache-profiles: benchmark
-          allow-external-symlinks: 'true'
           save-on-pull-request: ${{ inputs.cache_lane == 'fresh' }}
           fail-on-cache-error: ${{ inputs.cache_lane == 'fresh' }}
           verbose: true
         env:
-          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
-          BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
+          BORINGCACHE_SAVE_TOKEN: ${{ secrets.BORINGCACHE_SAVE_TOKEN }}
           BORINGCACHE_OBSERVABILITY_JSONL_PATH: ${{ runner.temp }}/${{ env.BENCHMARK_ID }}-boringcache-build-observability.jsonl
 
       - name: Purge GitHub Actions cache keys
@@ -362,7 +357,7 @@ jobs:
       - name: Validate BoringCache restore secret
         if: inputs.strategy == 'boringcache'
         env:
-          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
         run: |
           set -euo pipefail
           [[ -n "${BORINGCACHE_RESTORE_TOKEN}" ]] || { echo "Missing BoringCache restore token" >&2; exit 1; }
@@ -420,31 +415,26 @@ jobs:
         id: scenario_timing_start
         run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Setup Node for actions/cache tooling
-        if: inputs.strategy == 'actions-cache'
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure boringcache/one
         if: inputs.strategy == 'boringcache'
-        uses: boringcache/one@v1
+        uses: boringcache/one@9721d419d2c78c0780963d297eb3f81f24641a27
         with:
-          setup: mise
+          setup: none
           cli-version: ${{ inputs.cli_version }}
-          mode: nx-proxy
-          tools: node@${{ env.NODE_VERSION }}
-          workspace: ${{ env.BENCHMARK_WORKSPACE }}
-          cache-tag: ${{ steps.scope.outputs.tag_nx }}
+          mode: nx
           working-directory: ./upstream
           read-only: true
           save-on-pull-request: ${{ inputs.cache_lane == 'fresh' }}
           cache-profiles: benchmark
-          allow-external-symlinks: 'true'
           fail-on-cache-miss: true
           verbose: true
         env:
-          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
 
       - name: Verify dependency archives restored
         if: inputs.strategy == 'boringcache'
@@ -518,17 +508,12 @@ jobs:
           fetch-depth: 1
           submodules: false
 
-      - name: Install BoringCache CLI with boringcache/one
+      - name: Install BoringCache CLI
         if: inputs.strategy == 'boringcache'
-        uses: boringcache/one@v1
-        with:
-          setup: none
-          cli-version: ${{ inputs.cli_version }}
-          mode: archive
-          workspace: ${{ env.BENCHMARK_WORKSPACE }}
-          cli-platform: linux-amd64
-          cache-runtime: false
-
+        run: >-
+          ./scripts/install-boringcache-cli.sh
+          "${{ inputs.cli_version }}"
+          "linux-amd64"
       - name: Download scenario timing artifacts
         if: ${{ inputs.cache_lane != 'rolling' }}
         uses: actions/download-artifact@v8
@@ -579,7 +564,7 @@ jobs:
         if: inputs.strategy == 'boringcache'
         id: bc_cache_size
         env:
-          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN || secrets.BORINGCACHE_API_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
         run: |
           tags_csv="${{ needs.seed-cache.outputs.tags_csv }}"
           mkdir -p benchmark-storage
@@ -608,7 +593,7 @@ jobs:
       - name: Write benchmark artifacts
         id: artifact_files
         env:
-          BORINGCACHE_API_TOKEN: ${{ secrets.BORINGCACHE_API_TOKEN || secrets.BORINGCACHE_RESTORE_TOKEN }}
+          BORINGCACHE_RESTORE_TOKEN: ${{ secrets.BORINGCACHE_RESTORE_TOKEN }}
         run: |
           cache_summary_args=()
           if [[ -s benchmark-session-summary/benchmark-session-summary.json ]]; then
@@ -629,7 +614,7 @@ jobs:
             --cache-storage-source "${{ inputs.strategy == 'boringcache' && 'boringcache-check' || 'github-actions-cache-api' }}" \
             --storage-breakdown-json "${{ inputs.strategy == 'boringcache' && steps.bc_cache_size.outputs.breakdown_path || '' }}" \
             --cache-import-status "${{ needs.seed-cache.outputs.cache_import_status }}" \
-            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: the cold build uses boringcache/one in mode=nx-proxy with setup=mise for tooling, writes an empty run-scoped Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the Nx remote cache populated by the cold build in read-only mode.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}" \
+            --hit-behavior-note "${{ inputs.cache_lane == 'rolling' && 'Rolling lane: this run builds the current upstream commit as-is with the prior rolling cache available, exports the updated cache, and records that commit build only; warm follow-up runs are intentionally skipped.' || (inputs.strategy == 'boringcache' && 'Fresh lane: the cold build uses boringcache/one in mode=nx with after the host workflow sets up Node.js; the committed repo plan selects the Nx remote cache, and archives only Yarn dependency state via the benchmark profile in .boringcache.toml. Warm restores those dependency archives on a fresh runner and rebuilds the same pinned source tree against the Nx remote cache populated by the cold build in read-only mode.' || 'Fresh lane: the cold build runs from scratch and saves Yarn 4 cache plus upstream/.nx/cache and upstream/.nx/workspace-data to actions/cache under a run-scoped key while recording cold timing. Warm restores that same local cache key on a fresh runner and rebuilds the same pinned source tree without synthetic mutations.') }}" \
             "${cache_summary_args[@]}"
 
       - name: Upload benchmark artifacts
