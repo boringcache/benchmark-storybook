@@ -25,7 +25,6 @@ on:
 env:
   BENCHMARK_ID: ${{ inputs.benchmark_id }}
   CACHE_LANE: ${{ inputs.cache_lane }}
-  YARN_CACHE_PATH: ~/.yarn/berry/cache
 
 jobs:
   publish:
@@ -98,7 +97,6 @@ jobs:
           path: |
             upstream/.nx/cache
             upstream/.nx/workspace-data
-            ${{ env.YARN_CACHE_PATH }}
           key: ${{ steps.scope.outputs.cache_key }}
           restore-keys: |
             nx-${{ steps.scope.outputs.cache_scope }}-
@@ -182,7 +180,6 @@ jobs:
           path: |
             upstream/.nx/cache
             upstream/.nx/workspace-data
-            ${{ env.YARN_CACHE_PATH }}
           key: ${{ needs.publish.outputs.cache_key }}
           fail-on-cache-miss: true
 
