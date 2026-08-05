@@ -1,0 +1,141 @@
+name: "Run Storybook Nx benchmark phase"
+description: "Runs one Storybook Nx cache provider and phase."
+
+inputs:
+  strategy:
+    required: true
+  cache_lane:
+    required: true
+  phase:
+    required: true
+  cli_version:
+    required: false
+    default: ""
+  node_version:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout pinned Storybook source
+      shell: bash
+      run: |
+        git submodule sync --recursive
+        git -c protocol.version=2 submodule update --init --depth 1 --recommend-shallow --jobs 4 upstream
+
+    - name: Prepare clean Storybook source
+      shell: bash
+      env:
+        PREPARE_PHASE: ${{ inputs.phase == 'warm' && 'warm1' || 'base' }}
+      run: ./scripts/prepare-source.sh "$PREPARE_PHASE"
+
+    - name: Select the cache cohort
+      id: scope
+      shell: bash
+      env:
+        CACHE_LANE: ${{ inputs.cache_lane }}
+      run: |
+        set -euo pipefail
+        ref_slug="$(printf '%s' "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+        ref_slug="${ref_slug#-}"
+        ref_slug="${ref_slug%-}"
+        ref_slug="${ref_slug:-main}"
+        if [[ "$CACHE_LANE" == "rolling" ]]; then
+          cache_scope="storybook-rolling-${ref_slug}"
+        else
+          cache_scope="storybook-run-r${GITHUB_RUN_ID}-a${GITHUB_RUN_ATTEMPT}"
+        fi
+        ./scripts/scope-boringcache-run.sh "$cache_scope"
+        source_sha="$(git rev-parse HEAD:upstream)"
+        echo "cache_scope=${cache_scope}" >> "$GITHUB_OUTPUT"
+        echo "cache_key=nx-${cache_scope}-${source_sha}" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: ${{ inputs.node_version }}
+
+    - name: Enable the pinned Yarn release
+      shell: bash
+      working-directory: upstream
+      run: |
+        corepack enable
+        corepack install
+
+    - name: Restore the GitHub Actions cache
+      if: inputs.strategy == 'actions-cache' && inputs.phase == 'publish'
+      uses: actions/cache@v5
+      with:
+        path: |
+          upstream/.nx/cache
+          upstream/.nx/workspace-data
+        key: ${{ steps.scope.outputs.cache_key }}
+        restore-keys: |
+          nx-${{ steps.scope.outputs.cache_scope }}-
+
+    - name: Restore the exact GitHub Actions cache
+      if: inputs.strategy == 'actions-cache' && inputs.phase == 'warm'
+      uses: actions/cache/restore@v5
+      with:
+        path: |
+          upstream/.nx/cache
+          upstream/.nx/workspace-data
+        key: ${{ steps.scope.outputs.cache_key }}
+        fail-on-cache-miss: true
+
+    - name: Publish with BoringCache
+      id: boringcache-publish
+      if: inputs.strategy == 'boringcache' && inputs.phase == 'publish'
+      uses: boringcache/one@09e053620cda4d3472f26a3ddd181144a108e2c2 # v1.16.8
+      with:
+        cli-version: ${{ inputs.cli_version }}
+        setup: none
+        mode: nx
+        trust-policy: publish
+        working-directory: upstream
+        fail-on-cache-error: true
+        metadata-hints: phase=${{ inputs.cache_lane == 'rolling' && 'rolling' || 'fresh-cold' }}
+
+    - name: Restore with BoringCache
+      id: boringcache-restore
+      if: inputs.strategy == 'boringcache' && inputs.phase == 'warm'
+      uses: boringcache/one@09e053620cda4d3472f26a3ddd181144a108e2c2 # v1.16.8
+      with:
+        cli-version: ${{ inputs.cli_version }}
+        setup: none
+        mode: nx
+        trust-policy: restore
+        working-directory: upstream
+        fail-on-cache-miss: true
+        fail-on-cache-error: true
+        metadata-hints: phase=fresh-warm
+
+    - name: Install Storybook dependencies
+      shell: bash
+      working-directory: upstream
+      run: corepack yarn install --immutable
+
+    - name: Build the Storybook benchmark sandbox
+      shell: bash
+      working-directory: upstream
+      run: corepack yarn nx run bench/react-vite-default-ts:build --parallel=1
+
+    - name: Verify the Storybook build
+      shell: bash
+      run: test -s upstream/sandbox/bench-react-vite-default-ts/storybook-static/index.html
+
+    - name: Retain publish evidence
+      if: inputs.strategy == 'boringcache' && inputs.phase == 'publish'
+      uses: actions/upload-artifact@v6
+      with:
+        name: storybook-nx-${{ inputs.cache_lane }}-publish
+        path: ${{ steps.boringcache-publish.outputs.evidence-path }}
+        if-no-files-found: error
+
+    - name: Retain warm evidence
+      if: inputs.strategy == 'boringcache' && inputs.phase == 'warm'
+      uses: actions/upload-artifact@v6
+      with:
+        name: storybook-nx-fresh-restore
+        path: ${{ steps.boringcache-restore.outputs.evidence-path }}
+        if-no-files-found: error
