@@ -1,18 +1,7 @@
 workspace = "boringcache/benchmark-storybook"
 
-# Nx remote-cache benchmark. boringcache/one mode=nx owns the
-# task-output cache, so the benchmark profile archives only Yarn dependency
-# state that the remote adapter does not cover.
-
 [adapters.nx]
 tag = "storybook-nx-local"
 no-platform = true
 no-git = true
 command = ["corepack", "yarn", "nx", "run", "bench/react-vite-default-ts:build", "--parallel=1"]
-
-[entries.yarn-cache]
-tag = "storybook-yarn-cache-local"
-default_path = "~/.yarn/berry/cache"
-
-[profiles.benchmark]
-entries = ["yarn-cache"]

@@ -111,7 +111,6 @@ jobs:
           mode: nx
           trust-policy: publish
           working-directory: upstream
-          cache-profiles: benchmark
           fail-on-cache-error: true
           metadata-hints: phase=${{ inputs.cache_lane == 'rolling' && 'rolling' || 'fresh-cold' }}
         env:
@@ -193,7 +192,6 @@ jobs:
           mode: nx
           trust-policy: restore
           working-directory: upstream
-          cache-profiles: benchmark
           fail-on-cache-miss: true
           fail-on-cache-error: true
           metadata-hints: phase=fresh-warm

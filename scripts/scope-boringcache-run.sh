@@ -10,16 +10,12 @@ if [[ ! "$scope" =~ ^[a-z0-9][a-z0-9._-]+$ ]]; then
 fi
 
 config_path="${repo_root}/.boringcache.toml"
-for mapping in \
-  "storybook-nx-local:${scope}-nx" \
-  "storybook-yarn-cache-local:${scope}-yarn-cache"; do
-  old_tag="${mapping%%:*}"
-  new_tag="${mapping#*:}"
-  if ! grep -Fq "tag = \"${old_tag}\"" "$config_path"; then
-    echo "Missing expected local tag in ${config_path}: ${old_tag}" >&2
-    exit 1
-  fi
-  sed -i "s/tag = \"${old_tag}\"/tag = \"${new_tag}\"/" "$config_path"
-done
+old_tag="storybook-nx-local"
+new_tag="${scope}-nx"
+if ! grep -Fq "tag = \"${old_tag}\"" "$config_path"; then
+  echo "Missing expected local tag in ${config_path}: ${old_tag}" >&2
+  exit 1
+fi
+sed -i "s/tag = \"${old_tag}\"/tag = \"${new_tag}\"/" "$config_path"
 
-echo "Scoped BoringCache Nx tags to ${scope}."
+echo "Scoped the BoringCache Nx tag to ${scope}."
