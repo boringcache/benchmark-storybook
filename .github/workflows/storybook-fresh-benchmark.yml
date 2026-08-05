@@ -23,12 +23,9 @@ jobs:
     uses: ./.github/workflows/reusable-nx-benchmark.yml
     with:
       benchmark_id: storybook
-      project_repo: storybookjs/storybook
       strategy: actions-cache
       cache_lane: fresh
       node_version: "22.22.3"
-      install_command: yarn install --immutable
-      build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
     secrets: inherit
 
   boringcache:
@@ -36,11 +33,8 @@ jobs:
     uses: ./.github/workflows/reusable-nx-benchmark.yml
     with:
       benchmark_id: storybook
-      project_repo: storybookjs/storybook
       strategy: boringcache
       cache_lane: fresh
       cli_version: ${{ inputs.cli_version }}
       node_version: "22.22.3"
-      install_command: yarn install --immutable
-      build_command: "yarn nx run bench/react-vite-default-ts:build --parallel=1"
     secrets: inherit

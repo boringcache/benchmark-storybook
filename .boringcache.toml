@@ -8,6 +8,7 @@ workspace = "boringcache/benchmark-storybook"
 tag = "storybook-nx-local"
 no-platform = true
 no-git = true
+command = ["corepack", "yarn", "nx", "run", "bench/react-vite-default-ts:build", "--parallel=1"]
 
 [entries.yarn-cache]
 tag = "storybook-yarn-cache-local"
