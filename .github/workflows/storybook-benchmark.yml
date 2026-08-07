@@ -68,7 +68,6 @@ jobs:
       - name: Publish the Storybook Nx benchmark report
         run: |
           python3 ./scripts/benchmark-report.py summarize \
-            --benchmark "$BENCHMARK_ID" \
             --title "Storybook Nx rolling benchmark" \
             --input-dir phase-evidence \
             --output-dir benchmark-results
