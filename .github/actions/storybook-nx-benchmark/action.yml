@@ -156,7 +156,7 @@ runs:
       run: echo "build_seconds=$(( $(date +%s) - BUILD_STARTED_AT ))" >> "$GITHUB_OUTPUT"
     - name: Verify the Storybook build
       shell: bash
-      run: test -s upstream/sandbox/bench-react-vite-default-ts/storybook-static/index.html
+      run: test -s storybook-sandboxes/react-vite-default-ts/storybook-static/index.html
 
     - name: Retain publish evidence
       if: inputs.strategy == 'boringcache' && inputs.phase == 'publish'

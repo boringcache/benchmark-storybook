@@ -31,6 +31,10 @@ def main() -> int:
             "yarn task --task sandbox --start-from=auto --template react-vite/default-ts --no-link --debug" in action,
             "workflow omits Storybook's automatic sandbox dependency chain",
         )
+        require(
+            "test -s storybook-sandboxes/react-vite-default-ts/storybook-static/index.html" in action,
+            "workflow does not verify Storybook's configured sandbox output",
+        )
         require("yarn nx run bench/" not in action, "retired GitHub Nx recipe remains")
     except (KeyError, OSError, RuntimeError, tomllib.TOMLDecodeError) as error:
         print(f"Storybook recipe mismatch: {error}", file=sys.stderr)
