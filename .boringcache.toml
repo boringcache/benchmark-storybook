@@ -7,6 +7,6 @@ no-git = true
 metadata-hints = ["benchmark=storybook", "upstream-job=create-react-vite-default-ts"]
 command = [
   "corepack", "yarn", "task", "build",
-  "--template", "react-vite-default-ts",
+  "--template", "react-vite/default-ts",
   "--no-link", "-s", "build",
 ]

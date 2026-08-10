@@ -123,6 +123,16 @@ runs:
         fail-on-cache-error: true
         metadata-hints: benchmark=${{ inputs.benchmark_id }},phase=fresh-warm
 
+    - name: Install Storybook dependencies
+      shell: bash
+      working-directory: upstream
+      run: corepack yarn install --immutable
+
+    - name: Create the upstream Storybook sandbox
+      shell: bash
+      working-directory: upstream
+      run: corepack yarn task sandbox --template react-vite/default-ts --no-link -s sandbox --debug
+
     - name: Start the build timer
       id: build_timer
       shell: bash
@@ -133,10 +143,6 @@ runs:
         now="$(date +%s)"
         echo "setup_seconds=$(( now - SETUP_STARTED_AT ))" >> "$GITHUB_OUTPUT"
         echo "started_at=${now}" >> "$GITHUB_OUTPUT"
-    - name: Install Storybook dependencies
-      shell: bash
-      working-directory: upstream
-      run: corepack yarn install --immutable
 
     - name: Build the Storybook benchmark sandbox
       shell: bash
