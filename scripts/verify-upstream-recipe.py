@@ -27,7 +27,10 @@ def main() -> int:
         require("name: 'Create Sandbox'" in upstream, "upstream sandbox prerequisite changed")
         action = (ROOT / ".github/actions/storybook-nx-benchmark/action.yml").read_text()
         require("run-benchmark-plan.py nx --working-directory upstream" in action, "workflow bypasses the plan")
-        require("yarn task sandbox --template react-vite/default-ts --no-link -s sandbox --debug" in action, "workflow omits upstream sandbox prerequisite")
+        require(
+            "yarn task --task sandbox --start-from=auto --template react-vite/default-ts --no-link --debug" in action,
+            "workflow omits Storybook's automatic sandbox dependency chain",
+        )
         require("yarn nx run bench/" not in action, "retired GitHub Nx recipe remains")
     except (KeyError, OSError, RuntimeError, tomllib.TOMLDecodeError) as error:
         print(f"Storybook recipe mismatch: {error}", file=sys.stderr)

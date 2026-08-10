@@ -131,7 +131,7 @@ runs:
     - name: Create the upstream Storybook sandbox
       shell: bash
       working-directory: upstream
-      run: corepack yarn task sandbox --template react-vite/default-ts --no-link -s sandbox --debug
+      run: corepack yarn task --task sandbox --start-from=auto --template react-vite/default-ts --no-link --debug
 
     - name: Start the build timer
       id: build_timer
