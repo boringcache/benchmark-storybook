@@ -38,15 +38,23 @@ jobs:
             echo "Invalid Node version in upstream/.nvmrc: ${node_version:-<empty>}" >&2
             exit 1
           fi
-          sed -i -E \
-            "s/node_version: .*/node_version: \"${node_version}\"/" \
+          node_workflows=(
             .github/workflows/storybook-benchmark.yml
-
-          pinned_count="$(grep -cF "node_version: \"${node_version}\"" .github/workflows/storybook-benchmark.yml)"
-          if [[ "${pinned_count}" != "2" ]]; then
-            echo "Expected both benchmark providers to pin upstream Node ${node_version}; found ${pinned_count}." >&2
-            exit 1
-          fi
+            .github/workflows/storybook-fresh-benchmark.yml
+          )
+          for workflow in "${node_workflows[@]}"; do
+            if ! grep -qE '^[[:space:]]+node_version:' "${workflow}"; then
+              echo "No Node version input found in ${workflow}." >&2
+              exit 1
+            fi
+            sed -i -E \
+              "s/node_version: .*/node_version: \"${node_version}\"/" \
+              "${workflow}"
+            if grep -E '^[[:space:]]+node_version:' "${workflow}" | grep -Fv "node_version: \"${node_version}\""; then
+              echo "Not every Node version input in ${workflow} uses upstream Node ${node_version}." >&2
+              exit 1
+            fi
+          done
 
           github_repo_slug() {
             local url="$1"
@@ -68,6 +76,6 @@ jobs:
             exit 0
           fi
 
-          git add upstream .github/workflows/storybook-benchmark.yml
+          git add upstream "${node_workflows[@]}"
           git commit -m "Update upstream to ${upstream_repo}@${commit_sha}"
           git push origin HEAD:main

@@ -36,6 +36,28 @@ def main() -> int:
             "workflow does not verify Storybook's configured sandbox output",
         )
         require("yarn nx run bench/" not in action, "retired GitHub Nx recipe remains")
+
+        node_version = (ROOT / "upstream/.nvmrc").read_text().strip()
+        workflow_paths = (
+            ROOT / ".github/workflows/storybook-benchmark.yml",
+            ROOT / ".github/workflows/storybook-fresh-benchmark.yml",
+        )
+        for workflow_path in workflow_paths:
+            node_inputs = [
+                line.strip()
+                for line in workflow_path.read_text().splitlines()
+                if line.strip().startswith("node_version:")
+            ]
+            require(node_inputs, f"{workflow_path.name} has no Node version input")
+            require(
+                all(line == f'node_version: "{node_version}"' for line in node_inputs),
+                f"{workflow_path.name} does not use upstream Node {node_version}",
+            )
+
+        sync = (ROOT / ".github/workflows/sync.yml").read_text()
+        require("storybook-benchmark.yml" in sync, "sync omits the rolling Node pin")
+        require("storybook-fresh-benchmark.yml" in sync, "sync omits the fresh Node pins")
+        require("pinned_count" not in sync, "sync assumes a fixed provider count")
     except (KeyError, OSError, RuntimeError, tomllib.TOMLDecodeError) as error:
         print(f"Storybook recipe mismatch: {error}", file=sys.stderr)
         return 1
