@@ -1,0 +1,12 @@
+workspace = "boringcache/benchmark-storybook"
+
+[adapters.nx]
+tag = "storybook-nx-local"
+no-platform = true
+no-git = true
+metadata-hints = ["benchmark=storybook", "upstream-job=create-react-vite-default-ts"]
+command = [
+  "corepack", "yarn", "task", "build",
+  "--template", "react-vite/default-ts",
+  "--no-link", "-s", "build",
+]
