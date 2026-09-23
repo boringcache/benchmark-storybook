@@ -102,9 +102,10 @@ runs:
       uses: boringcache/one@476c7df90bc1e7c2c4066aa7eb31cc057ef7f8d1 # v1 / 1.32.0
       with:
         cli-version: ${{ inputs.cli_version }}
-        mode: nx
+        mode: archive
         trust-policy: publish
-        working-directory: upstream
+        working-directory: .
+        cache-profiles: storybook-nx
         fail-on-cache-error: true
     - name: Restore with BoringCache
       id: boringcache-restore
@@ -112,9 +113,10 @@ runs:
       uses: boringcache/one@476c7df90bc1e7c2c4066aa7eb31cc057ef7f8d1 # v1 / 1.32.0
       with:
         cli-version: ${{ inputs.cli_version }}
-        mode: nx
+        mode: archive
         trust-policy: restore
-        working-directory: upstream
+        working-directory: .
+        cache-profiles: storybook-nx
         fail-on-cache-miss: true
         fail-on-cache-error: true
     - name: Install Storybook dependencies
@@ -190,7 +192,7 @@ runs:
           --strategy "$STRATEGY" \
           --lane "$CACHE_LANE" \
           --phase "$REPORT_PHASE" \
-          --mode nx \
+          --mode archive \
           --restore-or-setup-seconds "$SETUP_SECONDS" \
           --workflow-seconds "$(( $(date +%s) - WORKFLOW_STARTED_AT ))" \
           --build-seconds "$BUILD_SECONDS" \

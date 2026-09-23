@@ -21,12 +21,23 @@ def main() -> int:
     try:
         plan = tomllib.loads((ROOT / ".boringcache.toml").read_text())
         require(plan["adapters"]["nx"]["command"] == EXPECTED, "Storybook plan changed")
+        require(
+            plan["profiles"]["storybook-nx"]["entries"] == ["nx-cache", "nx-workspace-data"],
+            "Storybook cache profile changed",
+        )
+        require(
+            [plan["entries"][name]["path"] for name in ("nx-cache", "nx-workspace-data")]
+            == ["upstream/.nx/cache", "upstream/.nx/workspace-data"],
+            "BoringCache does not save the GitHub Actions cache paths",
+        )
         upstream = (ROOT / "upstream/scripts/ci/sandboxes.ts").read_text()
         require("command: `yarn task build --template ${key} --no-link -s build`" in upstream, "generated CircleCI build command changed")
         require("'react-vite/default-ts'" in upstream, "upstream react-vite template key changed")
         require("name: 'Create Sandbox'" in upstream, "upstream sandbox prerequisite changed")
         action = (ROOT / ".github/actions/storybook-nx-benchmark/action.yml").read_text()
         require("run-benchmark-plan.py nx --working-directory upstream" in action, "workflow bypasses the plan")
+        require(action.count("mode: archive") == 2, "BoringCache does not archive the Nx cache")
+        require(action.count("cache-profiles: storybook-nx") == 2, "BoringCache cache profile changed")
         require(
             "yarn task --task sandbox --start-from=auto --template react-vite/default-ts --no-link --debug" in action,
             "workflow omits Storybook's automatic sandbox dependency chain",

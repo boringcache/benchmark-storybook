@@ -1,5 +1,16 @@
 workspace = "boringcache/benchmark-storybook"
 
+[entries.nx-cache]
+tag = "storybook-nx-cache-local"
+path = "upstream/.nx/cache"
+
+[entries.nx-workspace-data]
+tag = "storybook-nx-workspace-data-local"
+path = "upstream/.nx/workspace-data"
+
+[profiles.storybook-nx]
+entries = ["nx-cache", "nx-workspace-data"]
+
 [adapters.nx]
 tag = "storybook-nx-local"
 no-platform = true
